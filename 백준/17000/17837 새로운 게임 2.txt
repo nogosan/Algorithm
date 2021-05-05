@@ -1,0 +1,170 @@
+#include <iostream>
+#include <algorithm>
+#include <queue>
+#include <map>
+#include <set>
+#include <stack>
+#include <string>
+#include <cmath>
+#define fastio cin.tie(0), cout.tie(0), ios::sync_with_stdio(0)
+#define lint long long
+#define FORI(n) for(int i = 0; i < n; i++)
+#define FORJ(n) for(int j = 0; j < n; j++)
+#define FORK(n) for(int k = 0; k < n; k++)
+int dir[4][2] = { { 0,1 },{ 1,0 },{ 0,-1 },{ -1,0 } };		// 우 하 좌 상
+enum color {
+	WHITE, RED, BLUE
+};
+
+// 2021 05 05
+
+using namespace std;
+
+int n, k, answer = 1;
+vector<vector<int>> plain;
+vector<vector<deque<pair<int, int>>>> v;			// meeple: (number, direction)
+vector<pair<int, int>> pos;									// meeples' position
+
+void getInput() {
+	cin >> n >> k;
+	plain.resize(n); FORI(n) plain[i].resize(n);
+	v.resize(n); FORI(n) v[i].resize(n);
+	FORI(n) FORJ(n) cin >> plain[i][j];
+	FORI(k) {
+		int y, x, d; cin >> y >> x >> d;
+		if (d == 1) d = 0;
+		else if (d == 2) d = 2;
+		else if (d == 3) d = 3;
+		else d = 1;
+		v[y - 1][x - 1].push_back({ i, d });
+		pos.push_back({ y - 1, x - 1 });
+	}
+}
+
+bool gameOver() {
+	FORI(n)
+		FORJ(n)
+			if (v[i][j].size() >= 4) return true;
+	return false;
+}
+
+void endProgram(bool over) {
+	if (over) cout << answer << '\n';
+	else cout << "-1\n";
+	exit(0);
+}
+
+color getColor(int y, int x) {
+	if (y < 0 || y >= n || x < 0 || x >= n) return BLUE;
+	if (plain[y][x] == 2) return BLUE;
+	if (plain[y][x] == 1) return RED;
+	if (plain[y][x] == 0) return WHITE;
+}
+
+void pour(int fy, int fx, int ty, int tx, int meepleNum) {	
+	deque<pair<int, int>> from = v[fy][fx], to = v[ty][tx];
+	deque<pair<int, int>> temp;
+
+	while (from.front().first != meepleNum) {
+		temp.push_back(from.front());
+		from.pop_front();
+	}
+
+	// before moving, set position info
+	FORI(from.size()) {
+		int num = from[i].first;
+		pos[num].first = ty;
+		pos[num].second = tx;
+	}
+
+	while (!from.empty()) {
+		to.push_back(from.front());
+		from.pop_front();
+	}
+
+	v[fy][fx] = temp;
+	v[ty][tx] = to;
+}
+
+void pourReversed(int fy, int fx, int ty, int tx, int meepleNum) {
+	deque<pair<int, int>> from = v[fy][fx], to = v[ty][tx];
+	deque<pair<int, int>> temp;
+
+	while (from.front().first != meepleNum) {
+		temp.push_back(from.front());
+		from.pop_front();
+	}
+
+	// before moving, set position info
+	FORI(from.size()) {
+		int num = from[i].first;
+		pos[num].first = ty;
+		pos[num].second = tx;
+	}
+
+	while (!from.empty()) {
+		to.push_back(from.back());
+		from.pop_back();
+	}
+
+	v[fy][fx] = temp;
+	v[ty][tx] = to;
+}
+
+bool isIn(int y, int x) {
+	if (y < 0 || y >= n || x < 0 || x >= n) return false;
+	else return true;
+}
+
+void printV() {
+	FORI(n) {
+		FORJ(n) cout << v[i][j].size() << ' ';
+		cout << '\n';
+	}
+	cout << '\n';
+}
+
+int main(void) {
+	fastio;
+	
+	getInput();
+	while (answer < 1001) {
+		FORI(pos.size()) {
+			int y = pos[i].first, x = pos[i].second, meepleNum;
+			pair<int, int> meeple = v[y][x].front();
+			FORJ(v[y][x].size())
+				if (v[y][x][j].first == i) {
+					meeple = v[y][x][j];
+					meepleNum = j;
+				}
+			int d = meeple.second;
+
+			// nextPos
+			int ny = y + dir[d][0], nx = x + dir[d][1];
+
+			// first check it is blue
+			color cellColor = getColor(ny, nx);
+			if (cellColor == BLUE) {
+				// reverse direction
+				d = (d + 2) % 4;
+				v[y][x][meepleNum].second = d;
+				ny = y + dir[d][0]; nx = x + dir[d][1];
+			}
+
+			// then move
+			cellColor = getColor(ny, nx);
+			if (cellColor == WHITE)
+				pour(y, x, ny, nx, i);
+			else if (cellColor == RED)
+				pourReversed(y, x, ny, nx, i);
+			else if (cellColor == BLUE) {
+				/* FBI! stop moving! */
+			}
+
+			if (gameOver())
+				endProgram(true);
+		}
+		answer++;
+	}
+	endProgram(false);
+}
