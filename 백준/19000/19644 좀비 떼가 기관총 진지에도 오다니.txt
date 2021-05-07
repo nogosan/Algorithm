@@ -1,0 +1,66 @@
+#include <iostream>
+#include <algorithm>
+#include <queue>
+#include <map>
+#include <set>
+#include <stack>
+#include <string>
+#include <cmath>
+#define fastio cin.tie(0), cout.tie(0), ios::sync_with_stdio(0)
+#define lint long long
+#define FORI(n) for(int i = 0; i < n; i++)
+#define FORJ(n) for(int j = 0; j < n; j++)
+#define FORK(n) for(int k = 0; k < n; k++)
+int dir[4][2] = { { 0,1 },{ 1,0 },{ 0,-1 },{ -1,0 } };		// 우 하 좌 상
+
+// 2021 05 07
+
+using namespace std;
+
+int L, ML, MK, C;
+deque<int> d;
+
+void getInput() {
+	cin >> L >> ML >> MK >> C;
+	FORI(L) {
+		int hp; cin >> hp;
+		d.push_back(hp);
+	}
+}
+
+void endProgram(string message) {
+	cout << message << '\n';
+	exit(0);
+}
+
+void solve() {
+	queue<int> endTime;
+	int second = 0;
+	int damage = 0;
+	FORI(L) {
+		if (!endTime.empty() && endTime.front() == second) {
+			endTime.pop();
+			damage -= MK;
+		}
+
+		int frontZombie = d[i];
+		if (frontZombie > damage + MK) {
+			if (C) C--;
+			else endProgram("NO");
+		}
+		else {
+			damage += MK;
+			endTime.push(second + ML);
+		}
+
+		second++;
+	}
+	endProgram("YES");
+}
+
+int main(void) {
+	fastio;
+	
+	getInput();
+	solve();
+}
