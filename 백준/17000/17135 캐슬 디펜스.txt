@@ -1,0 +1,117 @@
+#include <iostream>
+#include <algorithm>
+#include <queue>
+#include <map>
+#include <set>
+#include <stack>
+#include <string>
+#include <cmath>
+#define fastio cin.tie(0), cout.tie(0), ios::sync_with_stdio(0)
+#define lint long long
+#define FORI(n) for(int i = 0; i < n; i++)
+#define FORJ(n) for(int j = 0; j < n; j++)
+#define FORK(n) for(int k = 0; k < n; k++)
+int dir[4][2] = { { 0,1 },{ 1,0 },{ 0,-1 },{ -1,0 } };		// 우 하 좌 상
+
+// 2021 05 09
+
+using namespace std;
+
+const int ENEMY = 1;
+int n, m, dist, answer = 0;
+vector<vector<int>> v;
+
+void getInput() {
+	cin >> n >> m >> dist;
+	v.resize(n);
+	FORI(n) v[i].resize(m);
+	FORI(n) FORJ(m) cin >> v[i][j];
+}
+
+bool gameOver(vector<vector<int>>& base) {					// when no enemy on the plain, over
+	FORI(n) FORJ(m) if (base[i][j] == 1) return false;
+	return true;
+}
+
+int getDist(int ay, int ax, int ty, int tx) {
+	return abs(ay - ty) + abs(ax - tx);
+}
+
+void getTargetPos(int ay, int ax, vector<vector<int>>& base, set<pair<int, int>>& toBeKilled) {			// ay: archer y
+	pair<int, int> enemy = { -1, -1 };
+	int dis = 10000;
+	int enemyLeftPos = 10000;
+	FORI(n) FORJ(m) {
+		int theDist = getDist(ay, ax, i, j);
+		if (base[i][j] == ENEMY && theDist <= dist)
+			if (theDist < dis || (theDist == dis && j < enemyLeftPos)) {
+				enemy = { i, j };
+				dis = theDist;
+				enemyLeftPos = j;
+			}
+	}
+	if (enemy.first != -1) toBeKilled.insert(enemy);
+}
+
+void kill(vector<vector<int>>& base, set<pair<int, int>>& toBeKilled) {
+	for (auto iter = toBeKilled.begin(); iter != toBeKilled.end(); iter++) {
+		pair<int, int> pos = (*iter);
+		int y = pos.first, x = pos.second;
+		base[y][x] = 0;
+	}
+}
+
+void enemyGoLower(vector<vector<int>>& base) {
+	for (int j = 0; j < m; j++)									// clear lowest line
+		base[n - 1][j] = 0;
+
+	for (int i = n - 2; i >= 0; i--)								// row inversed order
+		for (int j = 0; j < m; j++)
+			if (base[i][j] == ENEMY) swap(base[i][j], base[i + 1][j]);		// move lower
+}
+
+void p(vector<vector<int>>& base) {
+	FORI(n) {
+		FORJ(m) cout << base[i][j] << ' ';
+		cout << '\n';
+	}
+	cout << '\n';
+}
+
+int play(int p1, int p2, int p3) {
+	int killed = 0;
+
+	vector<vector<int>> base = v;
+	int p1y = n, p1x = p1;												// place archers on the virtual position
+	int p2y = n, p2x = p2;
+	int p3y = n, p3x = p3;
+
+	while (!gameOver(base)) {
+		set<pair<int, int>> toBeKilled;									// archers can attack same enemy!
+		getTargetPos(p1y, p1x, base, toBeKilled);
+		getTargetPos(p2y, p2x, base, toBeKilled);
+		getTargetPos(p3y, p3x, base, toBeKilled);
+
+		killed += toBeKilled.size();
+		kill(base, toBeKilled);
+
+		enemyGoLower(base);
+	}
+
+	return killed;
+}
+
+void solve() {
+	for (int i = 0; i < m - 2; i++)
+		for (int j = i + 1; j < m - 1; j++)
+			for (int k = j + 1; k < m; k++)
+				answer = max(answer, play(i, j, k));
+}
+
+int main(void) {
+	fastio;
+
+	getInput();
+	solve();
+	cout << answer << '\n';
+}

@@ -1,0 +1,160 @@
+#include <iostream>
+#include <algorithm>
+#include <queue>
+#include <map>
+#include <set>
+#include <stack>
+#include <string>
+#include <cmath>
+#define fastio cin.tie(0), cout.tie(0), ios::sync_with_stdio(0)
+#define lint long long
+#define FORI(n) for(int i = 0; i < n; i++)
+#define FORJ(n) for(int j = 0; j < n; j++)
+#define FORK(n) for(int k = 0; k < n; k++)
+int dir[4][2] = { { 0,1 },{ 1,0 },{ 0,-1 },{ -1,0 } };		// 우 하 좌 상
+
+// 2021 05 09
+
+using namespace std;
+
+int r, c, n;
+vector<vector<char>> v;
+vector<int> heights;
+
+void getInput() {
+	cin >> r >> c;
+	v.resize(r);
+	FORI(r) v[i].resize(c);
+	FORI(r) FORJ(c) cin >> v[i][j];
+
+	cin >> n;
+	heights.resize(n);
+	FORI(n) cin >> heights[i];
+}
+
+bool isIn(int y, int x) {
+	if (y < 0 || y >= r || x < 0 || x >= c) return false;
+	return true;
+}
+
+void throwBar(int h, bool& fromLeft) {
+	h = r - h;												// for indexing
+	if (fromLeft)
+		for (int j = 0; j < c; j++) {
+			if (v[h][j] == 'x') {
+				v[h][j] = '.';
+				break;
+			}
+		}
+	else
+		for (int j = c - 1; j >= 0; j--) {
+			if (v[h][j] == 'x') {
+				v[h][j] = '.';
+				break;
+			}
+		}
+	fromLeft = !fromLeft;
+}
+
+void getCluster(vector<vector<char>>& cluster, int y, int x, vector<vector<bool>>& visited) {
+	queue<pair<int, int>> q;
+	q.push({ y, x });
+	visited[y][x] = true;
+	while (!q.empty()) {
+		int cy = q.front().first, cx = q.front().second;
+		cluster[cy][cx] = 'x';
+		q.pop();
+
+		FORI(4) {
+			int ny = cy + dir[i][0], nx = cx + dir[i][1];
+			if (!isIn(ny, nx) || visited[ny][nx] || v[ny][nx] != 'x') continue;
+			q.push({ ny, nx });
+			visited[ny][nx] = true;
+		}
+	}
+}
+
+bool isOnAir(vector<vector<char>>& cluster) {
+	FORJ(c) if (cluster[r - 1][j] == 'x') return false;
+	return true;
+}
+
+void clearVector(vector<vector<char>>& vec) {
+	FORI(r) FORJ(c) vec[i][j] = '.';
+}
+
+bool checkCluster(vector<vector<char>>& cluster) {
+	vector<vector<bool>> visited(r);
+	FORI(r) visited[i].resize(c);
+
+	cluster.resize(r);
+	FORI(r) cluster[i].resize(c);
+	FORI(r) {
+		FORJ(c) if (v[i][j] == 'x' && !visited[i][j]) {
+			getCluster(cluster, i, j, visited);
+			if (isOnAir(cluster)) return true;
+			else clearVector(cluster);
+		}
+	}
+
+	return false;
+}
+
+void moveCluster(vector<vector<char>>& cluster) {
+	// first delete the cluster at v
+	FORI(r) FORJ(c)
+		if (cluster[i][j] == 'x') v[i][j] = '.';
+
+	while (true) {
+		vector<pair<int, int>> lowests;									// find all lowest cells
+		FORJ(c)
+			for (int i = r - 1; i >= 0; i--)
+				if (cluster[i][j] == 'x') {
+					lowests.push_back({ i, j });
+					break;
+				}
+
+		FORI(lowests.size()) {													// check if under them, there's another cluster or if is outside
+			int y = lowests[i].first, x = lowests[i].second;
+			int ny = y + 1, nx = x;
+			if (!isIn(ny, nx) || v[ny][nx] == 'x') {
+				FORJ(r) FORK(c) if (cluster[j][k] == 'x') v[j][k] = cluster[j][k];
+				return;
+			}
+		}
+
+		for (int i = r - 2; i >= 0; i--)
+			for (int j = 0; j < c; j++)
+				swap(cluster[i][j], cluster[i + 1][j]);
+	}
+}
+
+void solve() {
+	bool fromLeft = true;
+	FORK(n) {
+		int h = heights[k];
+
+		throwBar(h, fromLeft);
+
+		vector<vector<char>> cluster;
+		bool gotCluster = checkCluster(cluster);
+
+		if (gotCluster)
+			moveCluster(cluster);
+	}
+}
+
+void printAnswer() {
+	FORI(r) {
+		FORJ(c) cout << v[i][j];
+		cout << '\n';
+	}
+}
+
+int main(void) {
+	fastio;
+
+	getInput();
+	solve();
+	printAnswer();
+}
